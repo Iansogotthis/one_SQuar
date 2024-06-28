@@ -175,5 +175,3 @@ This project is licensed under the MIT License.
 - MySQL
 
 Join me on this adventure, and let’s conquer the world of square data management together. Your expertise and creativity will be invaluable as we build and expand this magical application. Let’s get coding and create something extraordinary!
-
-This comprehensive README should now align perfectly with your project setup, including all the functionality built and specific details tailored to your repository. Enjoy your adventure!
