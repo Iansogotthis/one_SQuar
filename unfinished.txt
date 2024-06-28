@@ -1,0 +1,350 @@
+Code Implementation
+Frontend - React Components
+Chart Component
+src/components/Chart.js:
+
+Copyimport React, { useEffect, useRef } from "react";
+import * as d3 from "d3";
+import d3Tip from "d3-tip";
+import { data } from "../data";
+import { calculateViewBox } from "../helpers/viewBoxHelper";
+
+const Chart = ({ onSquareClick, viewBox, setViewBox }) => {
+  const chartRef = useRef();
+
+  useEffect(() => {
+    const svg = d3.select(chartRef.current)
+      .attr("viewBox", viewBox)
+      .attr("preserveAspectRatio", "xMidYMid meet");
+
+    const width = window.innerWidth * 0.9;
+    const height = window.innerHeight * 0.9;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const centerSquareSize = Math.min(width, height) / 2;
+    const smallSquareSize = centerSquareSize / 2;
+    const smallestSquareSize = smallSquareSize / 2;
+    const tinySquareSize = smallestSquareSize / 2;
+
+    const drawSquare = (x, y, size, color, className, depth, parentText) => {
+      const rect = svg.append("rect")
+        .attr("x", x - size / 2)
+        .attr("y", y - size / 2)
+        .attr("width", size)
+        .attr("height", size)
+        .attr("class", `square ${className}`)
+        .attr("fill", color)
+        .on("click", () => { onSquareClick(className); });
+
+      svg.append("text")
+        .attr("x", x)
+        .attr("y", y)
+        .attr("dy", "0.35em")
+        .attr("text-anchor", "middle")
+        .attr("font-size", size / 5)
+        .attr("pointer-events", "none")
+        .text(className);
+    };
+
+    const initializeVisualization = (data) => {
+      drawSquare(centerX, centerY, centerSquareSize, "lightblue", "root", 1, "Center");
+
+      const corners = [
+        [centerX - centerSquareSize / 2, centerY - centerSquareSize / 2],
+        [centerX + centerSquareSize / 2, centerY - centerSquareSize / 2],
+        [centerX - centerSquareSize / 2, centerY + centerSquareSize / 2],
+        [centerX + centerSquareSize / 2, centerY + centerSquareSize / 2],
+      ];
+
+      drawSquares(corners, smallSquareSize, 1, "root", "Root");
+    };
+
+    const drawSquares = (corners, size, depth, className, parentText) => {
+      if (depth > 3) return;
+
+      const colors = {
+        root: "lightblue",
+        branch: "lightgray",
+        leaf: "lightgreen",
+        fruit: "lightcoral",
+      };
+
+      corners.forEach(([x, y], index) => {
+        let currentClassName;
+        if (depth === 1) {
+          currentClassName = "branch";
+        } else if (depth === 2) {
+          currentClassName = "leaf";
+        } else if (depth === 3) {
+          currentClassName = "fruit";
+        }
+
+        drawSquare(
+          x,
+          y,
+          size,
+          colors[currentClassName] || "",
+          currentClassName || "",
+          depth,
+          parentText
+        );
+
+        if (size > tinySquareSize) {
+          const nextSize = size / 2;
+          const nextCorners = [
+            [x - size / 2, y - size / 2],
+            [x + size / 2, y - size / 2],
+            [x - size / 2, y + size / 2],
+            [x + size / 2, y + size / 2],
+          ];
+
+          requestAnimationFrame(() => {
+            drawSquares(
+              nextCorners,
+              nextSize,
+              depth + 1,
+              currentClassName || "",
+              `${parentText}_${index + 1}`
+            );
+          });
+        }
+      });
+    };
+
+    initializeVisualization(data);
+  }, [onSquareClick, viewBox]);
+
+  return <svg ref={chartRef}></svg>;
+};
+
+export default Chart;
+
+
+Modal Component
+src/components/Modal.js:
+
+Copyimport React from "react";
+
+const Modal = ({
+  isOpen,
+  onClose,
+  onSave,
+  label,
+  setLabel,
+  onScaledView,
+  onScopedView,
+  onInclude,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal">
+      <div className="modal-content">
+        <span className="close" onClick={onClose}>
+          &times;
+        </span>
+        <p>Edit Label:</p>
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+        />
+        <button onClick={onSave} className="modal-button">Save</button>
+        <button onClick={onClose} className="modal-button">Cancel</button>
+        <br />
+        <button onClick={onScaledView} className="modal-button">Scaled View</button>
+        <button onClick={onScopedView} className="modal-button">Scoped View</button>
+        <button onClick={onInclude} className="modal-button">Include</button>
+      </div>
+    </div>
+  );
+};
+
+export default Modal;
+
+
+
+
+
+App Component
+src/App.js:
+
+Copyimport React, { useState } from "react";
+import Chart from "./components/Chart";
+import Modal from "./components/Modal";
+import "./App.css";
+import { calculateViewBox } from "./helpers/viewBoxHelper";
+
+const App = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [label, setLabel] = useState("");
+  const [currentSquare, setCurrentSquare] = useState(null);
+  const [viewBox, setViewBox] = useState(`0 0 ${window.innerWidth * 0.9} ${window.innerHeight * 0.9}`);
+
+  const openModal = (square) => {
+    setCurrentSquare(square);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setLabel("");
+  };
+
+  const saveLabel = () => {
+    // Logic to save the label
+    closeModal();
+  };
+
+  const handleScaledView = () => {
+    setViewBox(`0 0 ${window.innerWidth * 0.9} ${window.innerHeight * 0.9}`);
+    closeModal();
+  };
+
+  const handleScopedView = () => {
+    const newViewBox = calculateViewBox(currentSquare);
+    setViewBox(newViewBox);
+    closeModal();
+  };
+
+  const handleInclude = () => {
+    // Logic for include
+    closeModal();
+  };
+
+  return (
+    <div className="App">
+      <h1>Square Data Management App</h1>
+      <Chart onSquareClick={openModal} viewBox={viewBox} setViewBox={setViewBox} />
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onSave={saveLabel}
+        label={label}
+        setLabel={setLabel}
+        onScaledView={handleScaledView}
+        onScopedView={handleScopedView}
+        onInclude={handleInclude}
+      />
+    </div>
+  );
+};
+
+export default App;
+Additional Helper
+ViewBox Helper
+src/helpers/viewBoxHelper.js:
+
+Copyexport const calculateViewBox = (square) => {
+  // Logic to calculate the viewBox value based on the current square and its children
+  // Replace with actual calculation
+  const x = 0; // Replace with actual x calculation
+  const y = 0; // Replace with actual y calculation
+  const width = 100; // Replace with actual width calculation
+  const height = 100; // Replace with actual height calculation
+  
+  return `${x} ${y} ${width} ${height}`;
+};
+
+
+
+
+Styling the Components
+src/App.css:
+
+Copy.App {
+  text-align: center;
+}
+
+.modal {
+  display: block;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0,0,0);
+  background-color: rgba(0,0,0,0.4);
+  padding-top: 60px;
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 5% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  border-radius: 10px;  /* Rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.modal-button {
+  margin: 5px;
+  background-color: #1E90FF; /* Primary color */
+  border: none;
+  color: #FFF;
+  padding: 15px 32px;
+  text-align: center;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.modal-button:hover {
+  background-color: #FF6347; /* Secondary color for hover effect */
+  transition: background-color 0.3s ease;
+}
+
+.square {
+  fill-opacity: 0.7;
+  stroke: #E0E0E0;
+  stroke-width: 1px;
+  rx: 10; /* Rounded corners */
+  ry: 10; /* Rounded corners */
+  transition: all 0.3s ease; /* Smooth transition on hover */
+}
+
+.square:hover {
+  fill-opacity: 1;
+  stroke: #1E90FF; /* Primary color on hover */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow on hover */
+}
+
+.root {
+  fill: lightblue; /* Color for root */
+}
+
+.branch {
+  fill: lightgray; /* Color for branches */
+}
+
+.leaf {
+  fill: lightgreen; /* Color for leaves */
+}
+
+.fruit {
+  fill: lightcoral; /* Color for fruits */
+}
+
+text {
+  font-size: 14px;
+  text-anchor: middle;
+  fill: #333; /* Text color */
+}
