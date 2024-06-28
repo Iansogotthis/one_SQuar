@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Included Build</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .square {
+            stroke: black;
+            stroke-width: 2px;
+            cursor: pointer;
+        }
+
+        .root {
+            fill: lightblue;
+        }
+
+        .branch {
+            fill: lightgray;
+        }
+
+        .leaf {
+            fill: lightgreen;
+        }
+
+        .fruit {
+            fill: lightcoral;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        svg {
+            width: 90vw;
+            height: 90vh;
+            display: block;
+            margin: auto;
+        }
+
+        #returnMain {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <button id="returnMain" onclick="window.location.href='index.html';">Return to Main</button>
+    <svg id="chart"></svg>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const squareClass = urlParams.get('class') || 'root';
+        const parentText = urlParams.get('parent') || 'Center';
+
+        const svg = d3.select("#chart");
+        const width = window.innerWidth * 0.9;
+        const height = window.innerHeight * 0.9;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const centerSquareSize = Math.min(width, height) / 2;
+        const smallSquareSize = centerSquareSize / 2;
+        const smallestSquareSize = smallSquareSize / 2;
+        const tinySquareSize = smallestSquareSize / 2;
+
+        svg.attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
+
+        function drawSquare(
+            x,
+            y,
+            size,
+            color,
+            className,
+            depth,
+            parentText,
+        ) {
+            const rect = svg
+                .append("rect")
+                .attr("x", x - size / 2)
+                .attr("y", y - size / 2)
+                .attr("width", size)
+                .attr("height", size)
+                .attr("class", `square ${className}`)
+                .attr("fill", color)
+                .on("click", function () {
+                    window.location.href = `form_page.html?class=${className}&parent=${parentText}&depth=${depth}`;
+                });
+
+            svg.append("text")
+                .attr("x", x)
+                .attr("y", y)
+                .attr("dy", "0.35em")
+                .attr("text-anchor", "middle")
+                .attr("font-size", size / 5)
+                .attr("pointer-events", "none")
+                .text(className);
+        }
+
+        drawSquare(
+            centerX,
+            centerY,
+            centerSquareSize,
+            "lightblue",
+            squareClass,
+            1,
+            parentText,
+        );
+
+        const corners = [
+            [
+                centerX - centerSquareSize / 2,
+                centerY - centerSquareSize / 2,
+            ],
+            [
+                centerX + centerSquareSize / 2,
+                centerY - centerSquareSize / 2,
+            ],
+            [
+                centerX - centerSquareSize / 2,
+                centerY + centerSquareSize / 2,
+            ],
+            [
+                centerX + centerSquareSize / 2,
+                centerY + centerSquareSize / 2,
+            ],
+        ];
+
+        function drawSquares(corners, size, depth, className, parentText) {
+            if (depth > 1) return;
+
+            const colors = {
+                "root": "lightblue",
+                "branch": "lightgray",
+                "leaf": "lightgreen",
+                "fruit": "lightcoral"
+            };
+
+            corners.forEach(([x, y], index) => {
+                let currentClassName = className;
+                if (depth === 0) {
+                    currentClassName = "branch";
+                } else if (depth === 1) {
+                    currentClassName = "leaf";
+                } else if (depth === 2) {
+                    currentClassName = "fruit";
+                }
+
+                drawSquare(
+                    x,
+                    y,
+                    size,
+                    colors[currentClassName] || "",
+                    currentClassName || "",
+                    depth,
+                    parentText,
+                );
+
+                if (size > tinySquareSize) {
+                    const nextSize = size / 2;
+                    const nextCorners = [
+                        [x - size / 2, y - size / 2],
+                        [x + size / 2, y - size / 2],
+                        [x - size / 2, y + size / 2],
+                        [x + size / 2, y + size / 2],
+                    ];
+
+                    requestAnimationFrame(() => {
+                        drawSquares(
+                            nextCorners,
+                            nextSize,
+                            depth + 1,
+                            currentClassName || "",
+                            `${parentText}_${index + 1}`,
+                        );
+                    });
+                }
+            });
+        }
+
+        drawSquares(corners, smallSquareSize, 0, squareClass, parentText);
+
+    </script>
+</body>
+</html>

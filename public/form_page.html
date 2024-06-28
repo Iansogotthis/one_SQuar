@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            height: 100px;
+        }
+
+        .form-group button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Form Page</h1>
+    <form id="square-form">
+        <div class="form-group">
+            <label for="title">Title (1):</label>
+            <input type="text" id="title" />
+        </div>
+        <div class="form-group">
+            <label for="plane">Plane (2):</label>
+            <input type="text" id="plane" />
+        </div>
+        <div class="form-group">
+            <label for="purpose">Purpose (3):</label>
+            <input type="text" id="purpose" />
+        </div>
+        <div class="form-group">
+            <label for="delineator">Delineator (4):</label>
+            <input type="text" id="delineator" />
+        </div>
+        <div class="form-group">
+            <label for="notations">Notations (5):</label>
+            <input type="text" id="notations" />
+        </div>
+        <div class="form-group">
+            <label for="details">Details (6):</label>
+            <textarea id="details"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="extra-data">Extra Data (17):</label>
+            <textarea id="extra-data"></textarea>
+        </div>
+        <div class="form-group">
+            <button type="button" id="save">Save</button>
+        </div>
+    </form>
+    <script>
+        const form = document.getElementById("square-form");
+        const urlParams = new URLSearchParams(window.location.search);
+        const squareClass = urlParams.get('class');
+        const parentText = urlParams.get('parent');
+        const depth = urlParams.get('depth');
+
+        function saveFormData() {
+            const title = document.getElementById("title").value;
+            const plane = document.getElementById("plane").value;
+            const purpose = document.getElementById("purpose").value;
+            const delineator = document.getElementById("delineator").value;
+            const notations = document.getElementById("notations").value;
+            const details = document.getElementById("details").value;
+            const extraData = document.getElementById("extra-data").value;
+            const saveButton = document.getElementById("save");
+            saveButton.textContent = 'Saving...';
+            saveButton.disabled = true;
+            const data = {
+                class: squareClass,
+                parent: parentText,
+                depth: depth,
+                title: title,
+                plane: plane,
+                purpose: purpose,
+                delineator: delineator,
+                notations: notations,
+                details: details,
+                extraData: extraData
+            };
+
+            fetch('http://localhost:3000/save_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Redirect to included_build.html or show success message
+                window.location.href = 'included_build.html';
+            } else {
+                alert("Error saving data: " + data.error);
+                saveButton.textContent = 'Save';
+                saveButton.disabled = false;
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert('Failed to save data. Please try again.');
+            saveButton.textContent = 'Save';
+            saveButton.disabled = false;
+        });
+    }
+
+        document.getElementById("save").addEventListener("click", saveFormData);
+    </script>
+</body>
+
+</html>
